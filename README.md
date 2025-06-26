@@ -16,3 +16,9 @@
 
 ## Select the database and check for registered users under the auth_user table
 <img width="942" alt="image" src="https://github.com/user-attachments/assets/6ae70908-a2e2-4b9a-8188-6a442838e6f8" />
+
+## Build with docker compose
+<img width="602" alt="image" src="https://github.com/user-attachments/assets/e655ebc8-c84a-4e1e-8d2e-bda7bb838aea" />
+<img width="794" alt="image" src="https://github.com/user-attachments/assets/b8154dd1-e6e3-4e3e-be0b-d4ea6ccc9b1a" />
+
+
