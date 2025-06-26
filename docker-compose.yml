@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  mysql:
+    build: ./database
+    container_name: mysql-container
+    restart: always
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - chatapp-net
+
+  django:
+    build: ./backend
+    container_name: django-container
+    restart: always
+    ports:
+      - "8000:8000"
+    depends_on:
+      - mysql
+    environment:
+      DB_NAME: chatappdb
+      DB_USER: arpit
+      DB_PASSWORD: Jodhpur@21
+      DB_HOST: mysql-container
+      DB_PORT: 3306
+    networks:
+      - chatapp-net
+
+  nginx:
+    build: ./frontend
+    container_name: nginx-container
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - django
+    networks:
+      - chatapp-net
+
+volumes:
+  mysql_data:
+
+networks:
+  chatapp-net:
+    external: true
