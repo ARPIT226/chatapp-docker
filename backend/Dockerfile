@@ -1,63 +1,40 @@
-# Use Ubuntu 21.04 as base image
 FROM ubuntu:22.04
 
-# Avoid tzdata interactive prompt
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Set base working directory inside container
-WORKDIR /chatapp
-
-# Install system packages
-RUN apt-get update && apt-get install -y gnupg ca-certificates
-
+# Install system dependencies and Python 3.8 from deadsnakes
 RUN apt-get update && \
-    apt-get install -y software-properties-common && \
+    apt-get install -y software-properties-common curl git && \
     add-apt-repository ppa:deadsnakes/ppa -y && \
     apt-get update && \
-    apt-get install -y \
-        git \
-        curl \
-        gcc \
-        python3.8 \
-        python3.8-venv \
-        python3.8-dev \
-        python3.8-distutils \
-        default-libmysqlclient-dev \
-        build-essential \
-        pkg-config
+    apt-get install -y python3.8 python3.8-venv python3.8-dev \
+        gcc build-essential default-libmysqlclient-dev \
+        pkg-config netcat-openbsd && \
+    apt-get clean
 
+# Set working directory
+WORKDIR /app
 
-# Install pip for Python 3.8
-RUN curl -sS https://bootstrap.pypa.io/pip/3.8/get-pip.py | python3.8
+# Clone your repo
+RUN git clone https://github.com/ARPIT226/chat_app.git /app
 
-# Set python3.8 as default
-RUN ln -sf /usr/bin/python3.8 /usr/bin/python
+# Create virtual environment with Python 3.8 and install dependencies
+RUN python3.8 -m venv venv && \
+    ./venv/bin/pip install --upgrade pip && \
+    ./venv/bin/pip install -r requirements.txt && \
+    ./venv/bin/pip install gunicorn mysqlclient
 
-RUN rm -rf /chatapp && mkdir -p /chatapp 
+# Environment variables
+ENV DB_NAME=chatappdb \
+    DB_USER=arpit \
+    DB_PASSWORD=Jodhpur@21 \
+    DB_HOST=mysql-container \
+    DB_PORT=3306
 
-# Clone the Django app repo into /chatapp (secret token for private repository access) (uncomment below while running)
-#RUN git clone --depth=1 https://{secret-token}@github.com/ARPIT226/chat_app.git /chatapp
-
-# Copy env variables to chatapp 
-COPY .env /chatapp/.env
-
-# Create Python virtual environment
-RUN python -m venv /chatapp/venv
-
-# Upgrade pip
-RUN /chatapp/venv/bin/pip install --upgrade pip
-
-# Install Python dependencies
-RUN /chatapp/venv/bin/pip install -r /chatapp/requirements.txt
-
-# Install additional packages
-RUN /chatapp/venv/bin/pip install mysqlclient gunicorn
-
-# Set working directory to Django project root (where manage.py is)
-WORKDIR /chatapp/fundoo
-
-# Expose Django/Gunicorn port
-EXPOSE 8000
-
-# Run Gunicorn and load environment variables from .env file
-CMD ["/bin/bash", "-c", "set -a && source /chatapp/.env && set +a && /chatapp/venv/bin/gunicorn --bind 0.0.0.0:8000 fundoo.wsgi:application"]
+# Start command
+CMD bash -c '\
+  echo "Waiting for MySQL at $DB_HOST:$DB_PORT..." && \
+  until nc -z "$DB_HOST" "$DB_PORT"; do sleep 2; echo "Waiting..."; done && \
+  echo "DB is ready!" && \
+  /app/venv/bin/python /app/fundoo/manage.py migrate && \
+  exec /app/venv/bin/gunicorn --chdir /app/fundoo --bind 0.0.0.0:8000 fundoo.wsgi:application'
