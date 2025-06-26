@@ -18,3 +18,14 @@ CMD bash -c '\
     until mysqladmin ping --silent; do sleep 3; done && \
     mysql -u root < /init.sql && \
     tail -f /dev/null'
+
+#-----------------------------------------------------
+
+#Build using mysql image directly
+#FROM mysql:8.0
+#ENV MYSQL_ROOT_PASSWORD=root
+#ENV MYSQL_DATABASE=chatappdb
+#ENV MYSQL_USER=arpit
+#ENV MYSQL_PASSWORD=Jodhpur@21
+
+#COPY init.sql /docker-entrypoint-initdb.d/ 
